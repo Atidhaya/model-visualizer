@@ -21,7 +21,8 @@ matplotlib
 | save_misclassified_path(str) | path that you want to save your misclassified pictures (will be create automatically if not exist) |
 | minimum_size(int) | your model input size (e.g. 256) |
 | fig_title(str) | figure name to be save |
-| print_misclassified(bool) | print out misclassified pictures with true label and prediction, default is True |
+| print_misclassified(bool) | print out misclassified pictures with true label and prediction on the terminal, default is True |
+
 
 
 ### how to run
@@ -31,6 +32,11 @@ simply call
 ```
 python3 visualizer.py 
 ```
+
+
+### Example of print_misclassified 
+
+![img](https://i.imgur.com/97eOiSB.png)
 
 ### Example image
 
