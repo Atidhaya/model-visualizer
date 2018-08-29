@@ -9,8 +9,6 @@ from keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from keras.models import Model
 from keras.utils import multi_gpu_model
 from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
-from PIL import ImageFile
-from sklearn.metrics import classification_report, confusion_matrix 
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from os import mkdir
@@ -23,7 +21,7 @@ plt.switch_backend('agg')
 absolute variable should be declare here
 '''
 
-target_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
+test_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
 model_path = "/Users/doe/Desktop/game_classifier/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
 save_misclassified_path = "./misclassified" #your target folder to save misclassified picture 
 minimum_size = 256 #your model size 
@@ -98,7 +96,7 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
         for j in range(cols):
             if(start_i+(j+i*cols) > len(mispred_pict)-1):
                 break 
-            im = img.imread(target_path+"/"+ mispred_pict[start_i+(j+i*cols)])
+            im = img.imread(test_path+"/"+ mispred_pict[start_i+(j+i*cols)])
             ax[i][j].imshow(im)
             ec = (0, .6, .1)
             fc = (0, .7, .2)
@@ -125,13 +123,13 @@ def visualize(page_size,rows,col):
         make_plt(rows=rows,cols=cols,start_i=start_i,fig_name=fig_name)
 
 
-def execute(model_path=model_path, target_path=target_path,print_misclassified=print_misclassified, batch_size=batch_size):
+def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
     global count
     model = models.load_model(model_path)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     test_datagen = ImageDataGenerator(rescale=1./255)
     test_generator = test_datagen.flow_from_directory(
-        target_path,
+        test_path,
         target_size=(minimum_size,minimum_size),
         batch_size=batch_size,
         shuffle=False,
