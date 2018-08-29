@@ -12,8 +12,6 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from os import mkdir
-
-
 plt.switch_backend('agg')
 
 
@@ -33,7 +31,7 @@ count = 0
 batch_size = 1 #recommend to set to 1
 tot_img = 0
 
-fig_title = "misclassified_game"
+fig_title = "misclassified_test"
 
 page_size = 20      
 rows = 4
@@ -105,7 +103,7 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
                   bbox=dict(boxstyle="round", ec=ec, fc=fc))
             ec = (1, .5, .5)
             fc = (1, .8, .8)
-            ax[i][j].text(0, 50, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
+            ax[i][j].text(0, 40, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
                   ha="left", va="top", 
                   bbox=dict(boxstyle="round", ec=ec, fc=fc))
     plt.setp(ax, xticks=[], yticks=[])

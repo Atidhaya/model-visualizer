@@ -16,12 +16,12 @@ matplotlib
 
 | variable | description |
 | --- | --- |
-| test_path | your folder that will be use by flow_from_directory |
-| model_path | path of model.h5, will be called by model.load_model(model_path) |
-| save_misclassified_path | path that you want to save your misclassified pictures (will be create automatically if not exist) |
-| minimum_size | your model input size (e.g. 256) |
-| fig_title | figure name to be save |
-| print_misclassified | print out misclassified pictures with true label and prediction, default is True |
+| test_path(str) | your folder that will be use by flow_from_directory |
+| model_path(str) | path of model.h5, will be called by model.load_model(model_path) |
+| save_misclassified_path(str) | path that you want to save your misclassified pictures (will be create automatically if not exist) |
+| minimum_size(int) | your model input size (e.g. 256) |
+| fig_title(str) | figure name to be save |
+| print_misclassified(bool) | print out misclassified pictures with true label and prediction, default is True |
 
 
 ### how to run
@@ -31,3 +31,7 @@ simply call
 ```
 python3 visualizer.py 
 ```
+
+### Example image
+
+![alt text](https://imgur.com/a/Y3yq5tU)
