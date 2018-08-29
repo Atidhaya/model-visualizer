@@ -34,4 +34,4 @@ python3 visualizer.py
 
 ### Example image
 
-![alt text](https://imgur.com/a/Y3yq5tU)
+![img](https://i.imgur.com/LQl62EK.jpg)
