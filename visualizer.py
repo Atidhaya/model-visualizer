@@ -25,6 +25,7 @@ mispred_pict = []
 pred_actual = []
 pred_wrong = [] 
 confident_level = []
+threads = []
 count = 0
 
 
@@ -188,13 +189,17 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     for j in range(num_threads):
       worker = threading.Thread(target=worker_predictor, args=(c,model,test_generator,true_map,count))
       worker.start()
+      threads.append(worker)
 
-    while True:
-      # print(c.qsize())
-      if c.qsize() == 0:
-        time.sleep(2)
-        visualize(page_size,rows,cols)
-        break
+    for x in threads:
+        x.join()
+    visualize(page_size,rows,cols)
+
+    # while True:
+    #   # print(c.qsize())
+    #   if c.qsize() == 0:
+    #     time.sleep(2)        
+    #     break
 
 
 if __name__ == '__main__':
