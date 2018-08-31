@@ -163,6 +163,7 @@ def worker_predictor(c,model,test_generator,true_map,count):
 
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
     global count
+    last_thread = 0
     model = models.load_model(model_path)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     model._make_predict_function()
