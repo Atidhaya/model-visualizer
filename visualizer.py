@@ -3,6 +3,7 @@ import numpy as np
 import threading
 import tensorflow as tf
 from keras import models
+from keras import backend as K
 from queue import Queue
 from keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
@@ -17,8 +18,8 @@ absolute variable should be declare here
 '''
 
 num_threads = 8
-test_path = "/Users/wiwatwuwongw/Desktop/DataWoW/Project_Datwow/model-visualizer/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
-model_path = "/Users/wiwatwuwongw/Desktop/DataWoW/Project_Datwow/model-visualizer/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
+test_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
+model_path = "/Users/doe/Desktop/game_classifier/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
 save_misclassified_path = "./misclassified" #your target folder to save misclassified picture 
 minimum_size = 256 #your model size 
 mispred_pict = []
@@ -26,6 +27,10 @@ pred_actual = []
 pred_wrong = [] 
 confident_level = []
 count = 0
+
+glob_model = ""
+
+threads = []
 
 
 batch_size = 1 #recommend to set to 1
@@ -112,6 +117,7 @@ def draw_ax(q,ax,start_i,cols):
 
 
 def make_plt(rows, cols, start_i, fig_name, title=fig_title):
+    threads = []
     fig, ax = plt.subplots(rows, cols, frameon=False, figsize=(15, 25))
     fig.suptitle(fig_title, fontsize=20)
     q = Queue()
@@ -122,7 +128,13 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
 
     for i in range(num_threads):
       worker = threading.Thread(target=draw_ax, args=(q,ax,start_i,cols))
-      worker.start()
+      threads.append(worker)
+
+    for x in threads:
+        x.start()
+
+    for x in threads:
+        x.join()
 
     plt.setp(ax, xticks=[], yticks=[])
     plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
@@ -144,10 +156,7 @@ def worker_predictor(c,model,test_generator,true_map,count):
       x = c_prediction[0]
       y = c_prediction[1]
       i = c_prediction[2]
-      try:
-        predict = model.predict(x)
-      except:
-        predict = model.predict(x)
+      predict = model.predict(x)
       predicted_index = find_index(predict)
       is_match = match(y,predict)
       if not is_match:    
@@ -163,9 +172,10 @@ def worker_predictor(c,model,test_generator,true_map,count):
 
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
     global count
+    global model 
     model = models.load_model(model_path)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    model._make_predict_function()
+#    model._make_predict_function()
     test_datagen = ImageDataGenerator(rescale=1./255)
     test_generator = test_datagen.flow_from_directory(
         test_path,
@@ -178,27 +188,50 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     ##iterate through the whole test or validation set, extract necessary data
     global tot_img
     tot_img = len(test_generator)
-    c = Queue()
+    # c = Queue()
     
     for i in range(len(test_generator)):
         x,y = next(test_generator)
-        c.put([x,y,i])
+        predict = model.predict(x)
+        predicted_index = find_index(predict)
+        is_match = match(y,predict)
+        if not is_match:    
+          #print out mismatch label along with confidence level 
+            if(print_misclassified):
+                print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
+            mispred_pict.append(test_generator.filenames[i])
+            pred_actual.append(true_map[find_index(y)])
+            pred_wrong.append(true_map[predicted_index])
+            confident_level.append(predict[0][predicted_index]) 
+            count += 1
 
-    for j in range(num_threads):
-      worker = threading.Thread(target=worker_predictor, args=(c,model,test_generator,true_map,count))
-      worker.start()
+    # global glob_model 
+    # glob_model=model 
 
-    while True:
-      # print(c.qsize())
-      if c.qsize() == 0:
-        time.sleep(2)
-        visualize(page_size,rows,cols)
-        break
+    # for j in range(num_threads):
+    #     worker = threading.Thread(target=worker_predictor, args=(c,glob_model,test_generator,true_map,count))
+    #     worker.start()
+    #     threads.append(worker)
+
+    # for x in threads:
+    #     x.join()
+
+    # worker_predictor(c,model,test_generator,true_map,count)
+
+    visualize(page_size,rows,cols)
+
+    # while True:
+    #   # print(c.qsize())
+    #   if c.qsize() == 0:
+    #     time.sleep(2)
+    #     visualize(page_size,rows,cols)
+    #     break
 
 
 if __name__ == '__main__':
+    print("visualizer started")
     execute()
-    print("total misclassified :", count, "(",1-count/tot_img,"%)")
+    print("total misclassified :", count, "(",1-count/tot_img,")")
 
 
 
