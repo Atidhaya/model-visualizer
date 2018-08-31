@@ -1,17 +1,14 @@
 import os
 import numpy as np
+import threading
 import tensorflow as tf
-
 from keras import models
+from queue import Queue
 from keras.preprocessing.image import ImageDataGenerator
-from keras.applications.inception_v3 import InceptionV3
-from keras.layers import Dense, Dropout, GlobalAveragePooling2D
-from keras.models import Model
-from keras.utils import multi_gpu_model
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from os import mkdir
+import time
 plt.switch_backend('agg')
 
 
@@ -19,8 +16,9 @@ plt.switch_backend('agg')
 absolute variable should be declare here
 '''
 
-test_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
-model_path = "/Users/doe/Desktop/game_classifier/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
+num_threads = 8
+test_path = "/Users/wiwatwuwongw/Desktop/DataWoW/Project_Datwow/model-visualizer/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
+model_path = "/Users/wiwatwuwongw/Desktop/DataWoW/Project_Datwow/model-visualizer/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
 save_misclassified_path = "./misclassified" #your target folder to save misclassified picture 
 minimum_size = 256 #your model size 
 mispred_pict = []
@@ -28,17 +26,17 @@ pred_actual = []
 pred_wrong = [] 
 confident_level = []
 count = 0
+
+
 batch_size = 1 #recommend to set to 1
 tot_img = 0
 
 fig_title = "misclassified_test"
-
 page_size = 20      
 rows = 4
 cols = 5
 
 print_misclassified = True 
-
 
 
 #just typical inverse mapping because it's guarantee to have different indexes
@@ -56,8 +54,6 @@ def find_index(y):
             max_index = i
             max_prob = y[0][i] 
     return max_index 
-
-
 
 #check if the prediction match with the actual label. 
 #returnboolean and index of the wrongly predicted label 
@@ -87,32 +83,53 @@ def load_image(img_sub_path):
           print("bad image found ... skipping " , img_sub_path)
       return np.array(resized) 
 
+def draw_ax(q,ax,start_i,cols):
+  while q.qsize() > 0:
+      ax = ax
+      qq = q.get()
+      i = qq[0]
+      j = qq[1]
+      ec_0 = (0, .6, .1)
+      fc_0 = (0, .7, .2)
+      ec_1 = (1, .5, .5)
+      fc_1 = (1, .8, .8)
+      if(start_i+(j+i*cols) > len(mispred_pict)-1):
+          ax[i][j].spines['bottom'].set_color('white')
+          ax[i][j].spines['top'].set_color('white')
+          ax[i][j].spines['left'].set_color('white')
+          ax[i][j].spines['right'].set_color('white')
+          continue
+
+      im = img.imread(test_path+"/"+ mispred_pict[start_i+(j+i*cols)])
+      ax[i][j].imshow(im, extent=[-8,8,-8,8])
+
+      ax[i][j].text(-8, 8, 'Actual :' + pred_actual[start_i + (j+i*cols)] , size=10, rotation=0,
+          ha="left", va="top", bbox=dict(boxstyle="round", ec=ec_0, fc=fc_0))
+      ax[i][j].text(-8, 6.7, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
+          ha="left", va="top", 
+          bbox=dict(boxstyle="round", ec=ec_1, fc=fc_1))
+      q.task_done()
+
+
 def make_plt(rows, cols, start_i, fig_name, title=fig_title):
     fig, ax = plt.subplots(rows, cols, frameon=False, figsize=(15, 25))
     fig.suptitle(fig_title, fontsize=20)
+    q = Queue()
+
     for i in range(rows):
         for j in range(cols):
-            if(start_i+(j+i*cols) > len(mispred_pict)-1):
-                break 
-            im = img.imread(test_path+"/"+ mispred_pict[start_i+(j+i*cols)])
-            ax[i][j].imshow(im)
-            ec = (0, .6, .1)
-            fc = (0, .7, .2)
-            ax[i][j].text(0, 0, 'Actual :' + pred_actual[start_i + (j+i*cols)] , size=10, rotation=0,
-                  ha="left", va="top", 
-                  bbox=dict(boxstyle="round", ec=ec, fc=fc))
-            ec = (1, .5, .5)
-            fc = (1, .8, .8)
-            ax[i][j].text(0, 40, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
-                  ha="left", va="top", 
-                  bbox=dict(boxstyle="round", ec=ec, fc=fc))
+            q.put([i,j])
+
+    for i in range(num_threads):
+      worker = threading.Thread(target=draw_ax, args=(q,ax,start_i,cols))
+      worker.start()
+
     plt.setp(ax, xticks=[], yticks=[])
     plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
     if not os.path.exists(save_misclassified_path):
         os.makedirs(save_misclassified_path)
     print("saving..." , fig_name)
     fig.savefig(save_misclassified_path+"/"+fig_name)
-
 
 def visualize(page_size,rows,col):
     for i in range((len(mispred_pict)//page_size)+1):
@@ -121,10 +138,34 @@ def visualize(page_size,rows,col):
         make_plt(rows=rows,cols=cols,start_i=start_i,fig_name=fig_name)
 
 
+def worker_predictor(c,model,test_generator,true_map,count):
+  while c.qsize() > 0:
+      c_prediction = c.get()
+      x = c_prediction[0]
+      y = c_prediction[1]
+      i = c_prediction[2]
+      try:
+        predict = model.predict(x)
+      except:
+        predict = model.predict(x)
+      predicted_index = find_index(predict)
+      is_match = match(y,predict)
+      if not is_match:    
+          #print out mismatch label along with confidence level 
+          if(print_misclassified):
+              print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
+          mispred_pict.append(test_generator.filenames[i])
+          pred_actual.append(true_map[find_index(y)])
+          pred_wrong.append(true_map[predicted_index])
+          confident_level.append(predict[0][predicted_index]) 
+          count += 1
+      c.task_done()
+
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
     global count
     model = models.load_model(model_path)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model._make_predict_function()
     test_datagen = ImageDataGenerator(rescale=1./255)
     test_generator = test_datagen.flow_from_directory(
         test_path,
@@ -137,23 +178,27 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     ##iterate through the whole test or validation set, extract necessary data
     global tot_img
     tot_img = len(test_generator)
+    c = Queue()
+    
     for i in range(len(test_generator)):
         x,y = next(test_generator)
-        predict = model.predict(x) 
-        predicted_index = find_index(predict)
-        is_match = match(y,predict)
-        if not is_match:
-            #print out mismatch label along with confidence level 
-            if(print_misclassified):
-                print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
-            mispred_pict.append(test_generator.filenames[i])
-            pred_actual.append(true_map[find_index(y)])
-            pred_wrong.append(true_map[predicted_index])
-            confident_level.append(predict[0][predicted_index]) 
-            count += 1
-    visualize(page_size,rows,cols)  
+        c.put([x,y,i])
+
+    for j in range(num_threads):
+      worker = threading.Thread(target=worker_predictor, args=(c,model,test_generator,true_map,count))
+      worker.start()
+
+    while True:
+      # print(c.qsize())
+      if c.qsize() == 0:
+        time.sleep(2)
+        visualize(page_size,rows,cols)
+        break
 
 
 if __name__ == '__main__':
     execute()
     print("total misclassified :", count, "(",1-count/tot_img,"%)")
+
+
+
