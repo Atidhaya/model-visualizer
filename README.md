@@ -40,4 +40,4 @@ python3 visualizer.py
 
 ### Example image
 
-![img](https://i.imgur.com/LQl62EK.jpg)
+![img](https://i.imgur.com/undefined.png)
