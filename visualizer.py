@@ -156,7 +156,10 @@ def worker_predictor(c,model,test_generator,true_map,count):
       x = c_prediction[0]
       y = c_prediction[1]
       i = c_prediction[2]
-      predict = model.predict(x)
+      try:
+        predict = model.predict(x)
+      except:
+        predict = model.predict(x)
       predicted_index = find_index(predict)
       is_match = match(y,predict)
       if not is_match:    
