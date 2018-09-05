@@ -6,6 +6,7 @@ from keras import models
 from keras import backend as K
 from queue import Queue
 from keras.preprocessing.image import ImageDataGenerator
+from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import matplotlib.image as img
 from os import mkdir
@@ -29,6 +30,10 @@ confident_level = []
 threads = []
 count = 0
 
+predict_label = []
+true_label = []
+
+target_names = ['approved','declined','kenta']
 
 threads = []
 
@@ -150,7 +155,8 @@ def visualize(page_size,rows,col):
         make_plt(rows=rows,cols=cols,start_i=start_i,fig_name=fig_name)
 
 
-def worker_predictor(c,model,test_generator,true_map,count):
+def worker_predictor(c,model,test_generator,true_map,):
+  global count,true_label,predict_label
   while c.qsize() > 0:
       c_prediction = c.get()
       x = c_prediction[0]
@@ -168,13 +174,15 @@ def worker_predictor(c,model,test_generator,true_map,count):
               print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
           mispred_pict.append(test_generator.filenames[i])
           pred_actual.append(true_map[find_index(y)])
+          true_label.append(find_index(y))
+          predict_label.append(predicted_index)
           pred_wrong.append(true_map[predicted_index])
           confident_level.append(predict[0][predicted_index]) 
           count += 1
       c.task_done()
 
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
-    global count
+    global tot_img
     last_thread = 0
     model = models.load_model(model_path)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -189,38 +197,15 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     print(test_generator.class_indices)
     true_map = reverse_map(test_generator.class_indices)  
     ##iterate through the whole test or validation set, extract necessary data
-    global tot_img
     tot_img = len(test_generator)
     c = Queue()
-    
+
     for i in range(len(test_generator)):
         x,y = next(test_generator)
-        predict = model.predict(x)
-        predicted_index = find_index(predict)
-        is_match = match(y,predict)
-        if not is_match:    
-          #print out mismatch label along with confidence level 
-            if(print_misclassified):
-                print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
-            mispred_pict.append(test_generator.filenames[i])
-            pred_actual.append(true_map[find_index(y)])
-            pred_wrong.append(true_map[predicted_index])
-            confident_level.append(predict[0][predicted_index]) 
-            count += 1
-
-    # global glob_model 
-    # glob_model=model 
-
-    # for j in range(num_threads):
-    #     worker = threading.Thread(target=worker_predictor, args=(c,glob_model,test_generator,true_map,count))
-    #     worker.start()
-    #     threads.append(worker)
-
-    # for x in threads:
-    #     x.join()
+        c.put([x,y,i])
 
     for j in range(num_threads):
-      worker = threading.Thread(target=worker_predictor, args=(c,model,test_generator,true_map,count))
+      worker = threading.Thread(target=worker_predictor, args=(c,model,test_generator,true_map,))
       worker.start()
       threads.append(worker)
 
@@ -231,11 +216,14 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
 
 
 
-
 if __name__ == '__main__':
     print("visualizer started")
     execute()
-    print("total misclassified :", count, "(",1-count/tot_img,")")
+    print("total misclassified :", count, "(",1-count/tot_img,") accuracy")
+    print("Confusion matrix")
+    print(confusion_matrix(true_label,predict_label))
+    print("Classification report")
+    print(classification_report(true_label,predict_label,target_names=target_names))
 
 
 
