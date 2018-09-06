@@ -8,7 +8,7 @@ from queue import Queue
 from keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
-import matplotlib.image as img
+import matplotlib.image as imgg
 from os import mkdir
 import time
 plt.switch_backend('agg')
@@ -59,7 +59,7 @@ def reverse_map(model_class):
 #return index of the array that contains the max value
 #and corresponding label name 
 def find_index(y):
-    max_prob = 0
+    max_prob = 0g
     max_index = -1 
     for i in range(len(y[0])):
         if y[0][i] > max_prob :
@@ -149,6 +149,7 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
         os.makedirs(save_misclassified_path)
     print("saving..." , fig_name)
     fig.savefig(save_misclassified_path+"/"+fig_name)
+    plt.close(fig)
 
 def visualize(page_size,rows,col):
     for i in range((len(mispred_pict)//page_size)+1):
