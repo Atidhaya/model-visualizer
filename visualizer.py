@@ -167,7 +167,6 @@ def worker_predictor(c,model,test_generator,true_map):
         predict = model.predict(x)
       predicted_index = find_index(predict)
       is_match = match(y,predict)
-      true_label.append(find_index(y))
       predict_label.append(predicted_index)
       if not is_match:    
           #print out mismatch label along with confidence level 
