@@ -8,7 +8,7 @@ from queue import Queue
 from keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
-import matplotlib.image as imgg
+import matplotlib.image as img
 from os import mkdir
 plt.switch_backend('agg')
 
