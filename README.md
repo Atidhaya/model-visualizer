@@ -10,6 +10,7 @@ python 3.x and you'll need to have these libraries install
 tensorflow
 keras
 matplotlib
+numpy
 ```
 
 ### change your variable(s) at will
