@@ -126,7 +126,7 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
     q = Queue()
 
     for i in range(rows):
-        for j in range(cols):g
+        for j in range(cols):
             q.put([i,j])
 
     for i in range(num_threads):
