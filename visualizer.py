@@ -18,37 +18,34 @@ plt.switch_backend('agg')
 absolute variable should be declare here
 '''
 
-num_threads = 8
+num_threads = 8 #number of threads  
 test_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
 model_path = "/Users/doe/Desktop/game_classifier/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
 save_misclassified_path = "./misclassified" #your target folder to save misclassified picture 
-
 target_names = ['approved','declined'] # target_names for classification report  
-
 minimum_size = 256 #your model size 
+
+fig_title = "misclassified_test" #figure title 
+page_size = 20 #number of pictures per page
+rows = 4 
+cols = 5
+
+batch_size = 1 #recommend to set to 1
+
+print_misclassified = True #to log out misclassified images 
+
+
+'''
+variables that shouldn't be change
+'''
+
 mispred_pict = []
 pred_actual = []
 pred_wrong = [] 
 confident_level = []
 threads = []
-count = 0
-
 predict_label = []
-
-
 threads = []
-
-
-batch_size = 1 #recommend to set to 1
-tot_img = 0
-
-fig_title = "misclassified_test"
-page_size = 20      
-rows = 4
-cols = 5
-
-print_misclassified = True 
-
 
 
 #just typical inverse mapping because it's guarantee to have different indexes
@@ -130,7 +127,7 @@ def make_plt(rows, cols, start_i, fig_name, title=fig_title):
     q = Queue()
 
     for i in range(rows):
-        for j in range(cols):
+        for j in range(cols):g
             q.put([i,j])
 
     for i in range(num_threads):
@@ -181,7 +178,6 @@ def worker_predictor(c,model,test_generator,true_map):
           pred_actual.append(true_map[find_index(y)])
           pred_wrong.append(true_map[predicted_index])
           confident_level.append(predict[0][predicted_index]) 
-          count += 1
       c.task_done()
 
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
@@ -200,8 +196,6 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     print(test_generator.class_indices)
     true_map = reverse_map(test_generator.class_indices)  
     ##iterate through the whole test or validation set, extract necessary data
-    global tot_img
-    tot_img = len(test_generator)
     c = Queue()
     
     for i in range(len(test_generator)):
@@ -216,7 +210,7 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     for x in threads:
         x.join()
     visualize(page_size,rows,cols)
-    print("total misclassified :", count, "(",1-count/tot_img,") accuracy")
+    print("total misclassified :", len(mispred_pict), "(",1-len(mispred_pict)/len(test_generator),") accuracy")
     print("Confusion matrix")
     print(confusion_matrix(test_generator.classes,predict_label))
     print("Classification report")
