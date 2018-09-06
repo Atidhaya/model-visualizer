@@ -10,7 +10,6 @@ from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import matplotlib.image as imgg
 from os import mkdir
-import time
 plt.switch_backend('agg')
 
 
@@ -56,7 +55,7 @@ def reverse_map(model_class):
 #return index of the array that contains the max value
 #and corresponding label name 
 def find_index(y):
-    max_prob = 0g
+    max_prob = 0
     max_index = -1 
     for i in range(len(y[0])):
         if y[0][i] > max_prob :
