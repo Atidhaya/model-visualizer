@@ -21,7 +21,7 @@ num_threads = 8 #number of threads
 test_path = "/Users/doe/Desktop/validation"  #test or validation directory path call by generator, must have sub directory equal to number of classes. 
 model_path = "/Users/doe/Desktop/game_classifier/model_weights/game_classifier_val_acc_94.h5" #your .h5 model path. 
 save_misclassified_path = "./misclassified" #your target folder to save misclassified picture 
-target_names = ['approved','declined'] # target_names for classification report  
+target_names = ['approved','declined','kenta'] # target_names for classification report  
 minimum_size = 256 #your model size 
 
 fig_title = "misclassified_test" #figure title 
@@ -32,7 +32,7 @@ cols = 5
 batch_size = 1 #recommend to set to 1
 
 print_misclassified = True #to log out misclassified images 
-print_all = True 
+print_all = True #print the prediction instead of highest confident level 
 
 
 '''
@@ -114,7 +114,7 @@ def draw_ax(q,ax,start_i,cols):
 
       ax[i][j].text(-8, 8, 'Actual :' + pred_actual[start_i + (j+i*cols)] , size=10, rotation=0,
           ha="left", va="top", bbox=dict(boxstyle="round", ec=ec_0, fc=fc_0))
-      if (print_all):
+      if print_all == False :
           ax[i][j].text(-8, 6.7, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
               ha="left", va="top", 
               bbox=dict(boxstyle="round", ec=ec_1, fc=fc_1))
@@ -171,7 +171,6 @@ def worker_predictor(c,model,test_generator,true_map):
         predict = model.predict(x)
       except:
         predict = model.predict(x)
-      print(predict)
       predicted_index = find_index(predict)
       is_match = match(y,predict)
       predict_label.append(predicted_index)
@@ -182,7 +181,7 @@ def worker_predictor(c,model,test_generator,true_map):
           mispred_pict.append(test_generator.filenames[i])
           pred_actual.append(true_map[find_index(y)])
           if (print_all):
-              temp = str("approved : "+predict[0] + "\n declined : " + predict[1] + "\n kenta : " + predict[2]) 
+              temp = "approved : "+ str(predict[0][0]) + "\n declined : " + str(predict[0][1]) + "\n kenta : " + str(predict[0][2]) 
               pred_wrong.append(temp)
           else:
               pred_wrong.append(true_map[predicted_index])
@@ -223,7 +222,7 @@ def execute(model_path=model_path, test_path=test_path,print_misclassified=print
     print("Confusion matrix")
     print(confusion_matrix(test_generator.classes,predict_label))
     print("Classification report")
-    print(classification_report(test_generator.clases,predict_label,target_names=target_names))
+    print(classification_report(test_generator.classes,predict_label,target_names=target_names))
 
 
 if __name__ == '__main__':
