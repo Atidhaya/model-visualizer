@@ -32,6 +32,7 @@ cols = 5
 batch_size = 1 #recommend to set to 1
 
 print_misclassified = True #to log out misclassified images 
+print_all = True 
 
 
 '''
@@ -113,9 +114,14 @@ def draw_ax(q,ax,start_i,cols):
 
       ax[i][j].text(-8, 8, 'Actual :' + pred_actual[start_i + (j+i*cols)] , size=10, rotation=0,
           ha="left", va="top", bbox=dict(boxstyle="round", ec=ec_0, fc=fc_0))
-      ax[i][j].text(-8, 6.7, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
-          ha="left", va="top", 
-          bbox=dict(boxstyle="round", ec=ec_1, fc=fc_1))
+      if (print_all):
+          ax[i][j].text(-8, 6.7, 'Predicted : ' + pred_wrong[start_i + (j+i*cols) ] +" ("+str(confident_level[start_i + (j+i*cols) ])+")", size=10, rotation=0,
+              ha="left", va="top", 
+              bbox=dict(boxstyle="round", ec=ec_1, fc=fc_1))
+      else:
+          ax[i][j].text(-8, 6.7, pred_wrong[start_i + (j+i*cols) ], size=10, rotation=0,
+              ha="left", va="top", 
+              bbox=dict(boxstyle="round", ec=ec_1, fc=fc_1))
       q.task_done()
 
 
@@ -165,6 +171,7 @@ def worker_predictor(c,model,test_generator,true_map):
         predict = model.predict(x)
       except:
         predict = model.predict(x)
+      print(predict)
       predicted_index = find_index(predict)
       is_match = match(y,predict)
       predict_label.append(predicted_index)
@@ -174,8 +181,12 @@ def worker_predictor(c,model,test_generator,true_map):
               print(test_generator.filenames[i],"||", "should be [", true_map[find_index(y)], "] but [",true_map[predicted_index], "(",predict[0][predicted_index],")]")
           mispred_pict.append(test_generator.filenames[i])
           pred_actual.append(true_map[find_index(y)])
-          pred_wrong.append(true_map[predicted_index])
-          confident_level.append(predict[0][predicted_index]) 
+          if (print_all):
+              temp = str("approved : "+predict[0] + "\n declined : " + predict[1] + "\n kenta : " + predict[2]) 
+              pred_wrong.append(temp)
+          else:
+              pred_wrong.append(true_map[predicted_index])
+              confident_level.append(predict[0][predicted_index]) 
       c.task_done()
 
 def execute(model_path=model_path, test_path=test_path,print_misclassified=print_misclassified, batch_size=batch_size):
